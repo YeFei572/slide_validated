@@ -2,9 +2,15 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:demo04/captcha/block_puzzle_captcha.dart';
+import 'package:demo04/pages/action_page.dart';
+import 'package:demo04/pages/home_page.dart';
+import 'package:demo04/pages/message_page.dart';
+import 'package:demo04/pages/mine_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:oktoast/oktoast.dart';
+import 'package:preload_page_view/preload_page_view.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +40,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Flutter Demo',
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          primarySwatch: Colors.pink,
         ),
         home: const MyHomePage(),
       ),
@@ -50,41 +56,64 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  int currentIndex = 0;
+  late PreloadPageController _controller;
+
+  List<Widget> pages = const [
+    HomePage(),
+    ActionPage(),
+    MessagePage(),
+    MinePage(),
+  ];
+
+  List<BottomNavigationBarItem> items = <BottomNavigationBarItem>[
+    const BottomNavigationBarItem(
+      icon: Icon(Icons.home),
+      label: '首页',
+      activeIcon: Icon(Icons.home_filled),
+    ),
+    const BottomNavigationBarItem(
+      icon: Icon(Icons.email_outlined),
+      label: '动态',
+      activeIcon: Icon(Icons.email),
+    ),
+    const BottomNavigationBarItem(
+      icon: Icon(Icons.messenger_outline),
+      label: '消息',
+      activeIcon: Icon(Icons.message),
+    ),
+    const BottomNavigationBarItem(
+      icon: Icon(Icons.person_outline),
+      label: '我的',
+      activeIcon: Icon(Icons.person),
+    ),
+  ];
+
+  @override
+  void initState() {
+    _controller = PreloadPageController(initialPage: 0);
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('滑动验证码')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: submit,
-              child: const Text("点击提交"),
-            )
-          ],
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: items,
+        type: BottomNavigationBarType.fixed,
+        currentIndex: currentIndex,
+        onTap: (index) {
+          setState(() => currentIndex = index);
+          _controller.jumpToPage(index);
+        },
       ),
-    );
-  }
-
-  Future<void> submit() async {
-    showToast('测试滑动校验功能', backgroundColor: Colors.black87);
-    showDialog(
-      context: context,
-      builder: (_) {
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          child: BlockPuzzleCaptchaPage(onSuccess: (v) {
-            showToast('滑动成功！$v', backgroundColor: Colors.green);
-          }, onFail: () {
-            showToast('滑动失败！', backgroundColor: Colors.red);
-          }),
-        );
-      },
+      body: PreloadPageView.builder(
+        controller: _controller,
+        itemBuilder: (_, index) => pages[index],
+        itemCount: pages.length,
+        physics: const NeverScrollableScrollPhysics(),
+        preloadPagesCount: 0,
+      ),
     );
   }
 }
